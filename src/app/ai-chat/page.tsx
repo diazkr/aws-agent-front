@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Send, Sparkles, TrendingUp, DollarSign, BarChart3, AlertCircle } from "lucide-react";
+import { Send, Sparkles, TrendingUp, DollarSign, BarChart3, AlertCircle, Bot } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 import ChatSuggestions, { Suggestion } from "@/components/chat/ChatSuggestions";
 import ChatMessageBubble from "@/components/chat/ChatMessageBubble";
@@ -32,10 +32,80 @@ type Message = {
 function BotMarkdownBubble({ id, content }: { id: string | number; content: string }) {
   return (
     <div key={id} className="flex w-full">
-      <div className="max-w-[80%] rounded-2xl px-4 py-3 bg-white/80 shadow border border-purple-100 text-slate-800">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-          {content}
-        </ReactMarkdown>
+      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center flex-shrink-0 mr-2">
+        <Bot className="w-4 h-4 text-white" />
+      </div>
+      <div className="max-w-[85%] rounded-2xl px-4 py-3 bg-white/80 shadow border border-purple-100 text-slate-800">
+        <div className="prose prose-sm max-w-none prose-slate">
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={{
+              table: ({ children }) => (
+                <div className="overflow-x-auto my-4">
+                  <table className="min-w-full border-collapse border border-gray-300 rounded-lg">
+                    {children}
+                  </table>
+                </div>
+              ),
+              thead: ({ children }) => <thead className="bg-purple-50">{children}</thead>,
+              tbody: ({ children }) => <tbody className="bg-white">{children}</tbody>,
+              tr: ({ children }) => <tr className="border-b border-gray-200 hover:bg-gray-50">{children}</tr>,
+              th: ({ children }) => (
+                <th className="border border-gray-300 px-4 py-2 text-left font-semibold text-purple-800 bg-purple-100">
+                  {children}
+                </th>
+              ),
+              td: ({ children }) => <td className="border border-gray-300 px-4 py-2 text-sm">{children}</td>,
+              // Estilos adicionales para otros elementos
+              h1: ({ children }) => (
+                <h1 className="text-xl font-bold text-slate-800 mb-3 mt-4">{children}</h1>
+              ),
+              h2: ({ children }) => (
+                <h2 className="text-lg font-semibold text-slate-700 mb-2 mt-3">{children}</h2>
+              ),
+              h3: ({ children }) => (
+                <h3 className="text-base font-medium text-slate-700 mb-2 mt-2">{children}</h3>
+              ),
+              p: ({ children }) => (
+                <p className="mb-2 text-slate-700 leading-relaxed">
+                  {children}
+                </p>
+              ),
+              ul: ({ children }) => (
+                <ul className="list-disc list-inside mb-3 space-y-1">
+                  {children}
+                </ul>
+              ),
+              ol: ({ children }) => (
+                <ol className="list-decimal list-inside mb-3 space-y-1">
+                  {children}
+                </ol>
+              ),
+              li: ({ children }) => <li className="text-slate-700">{children}</li>,
+              code: ({ inline, children }) => {
+                if (inline) {
+                  return (
+                    <code className="bg-purple-50 text-purple-800 px-1 py-0.5 rounded text-xs font-mono">
+                      {children}
+                    </code>
+                  );
+                }
+                return (
+                  <pre className="bg-slate-100 p-3 rounded-lg overflow-x-auto mb-3">
+                    <code className="text-sm font-mono text-slate-800">{children}</code>
+                  </pre>
+                );
+              },
+              blockquote: ({ children }) => (
+                <blockquote className="border-l-4 border-purple-300 pl-4 italic text-slate-600 my-3">
+                  {children}
+                </blockquote>
+              ),
+            }}
+          >
+            {content}
+          </ReactMarkdown>
+        </div>
       </div>
     </div>
   );
@@ -101,38 +171,6 @@ export default function Chat() {
     });
   };
 
-  const updateActiveAssistant = (delta: string) => {
-    setMessages((prev) => {
-      const idx =
-        activeBotIndexRef.current !== null
-          ? activeBotIndexRef.current
-          : // fallback defensivo
-            [...prev].reverse().findIndex((m) => m.sender === "bot") >= 0
-          ? prev.length - 1 - [...prev].reverse().findIndex((m) => m.sender === "bot")
-          : null;
-
-      if (idx === null || idx < 0 || idx >= prev.length) {
-        // no había burbuja; crea una
-        const draft = [
-          ...prev,
-          {
-            id: `bot-${Date.now()}`,
-            message: delta,
-            sender: "bot",
-            timestamp: new Date().toISOString(),
-            message_type: "text",
-          } as Message,
-        ];
-        activeBotIndexRef.current = draft.length - 1;
-        return draft;
-      }
-
-      const copy = [...prev];
-      copy[idx] = { ...copy[idx], message: (copy[idx].message ?? "") + delta };
-      return copy;
-    });
-  };
-
   const handleSendMessage = async (text = newMessage) => {
     if (!text.trim()) return;
 
@@ -152,32 +190,37 @@ export default function Chat() {
     setIsLoading(true);
 
     try {
-      // Prepara el contenedor del assistant a rellenar
-      startAssistantBubble();
+      // ❌ NO crear la burbuja del bot al inicio
+      // startAssistantBubble();
+
+      // Variable para acumular la respuesta del asistente
+      let assistantResponse = "";
 
       // CONSUME EL STREAM DEL BACKEND
       for await (const evt of streamBackendChat({
         message: text,
-        userId: "test-1235",
-        convId: "31471",
+        userId: "test-15",
+        convId: "999999",
         signal: abortRef.current!.signal,
       })) {
         if (evt.type === "assistant") {
-          updateActiveAssistant(evt.content);
+          // Solo acumular, NO mostrar todavía
+          assistantResponse += evt.content;
         } else if (evt.type === "tool_call") {
-          // Píntalo como bot (izquierda) para que no se vea como usuario
+          // Estos SÍ se agregan inmediatamente
           append({
             id: `tool-${(globalThis.crypto as any)?.randomUUID?.() ?? Date.now()}`,
             message: `🔧 Tool call: ${JSON.stringify(evt.content)}`,
-            sender: "bot", // <— importante: pinta a la izquierda
+            sender: "bot",
             timestamp: new Date().toISOString(),
             message_type: "text",
           });
         } else if (evt.type === "tool_message") {
+          // Estos SÍ se agregan inmediatamente
           append({
             id: `toolmsg-${(globalThis.crypto as any)?.randomUUID?.() ?? Date.now()}`,
             message: `🧩 Tool message: ${evt.content}`,
-            sender: "bot", // <— también como bot
+            sender: "bot",
             timestamp: new Date().toISOString(),
             message_type: "text",
           });
@@ -186,27 +229,23 @@ export default function Chat() {
         }
       }
 
-      // (Opcional) Persistencia, usando el índice activo
-      const finalBot =
-        activeBotIndexRef.current !== null
-          ? messages[activeBotIndexRef.current] // ojo: podría estar desfasado
-          : null;
+      // ✅ AHORA crear la respuesta final del bot AL FINAL
+      if (assistantResponse.trim()) {
+        append({
+          id: `bot-${Date.now()}`,
+          message: assistantResponse,
+          sender: "bot",
+          timestamp: new Date().toISOString(),
+          message_type: "text",
+        });
+      }
 
-      // si quieres asegurar texto final, lee del estado “en vivo”:
-      let finalBotText = "";
-      setMessages((curr) => {
-        const idx = activeBotIndexRef.current;
-        if (idx !== null && idx >= 0 && idx < curr.length && curr[idx].sender === "bot") {
-          finalBotText = curr[idx].message;
-        }
-        return curr;
-      });
-
+      // Persistencia
       await ChatMessage.bulkCreate([
         userMessage,
         {
           id: `persist-bot-${Date.now()}`,
-          message: finalBotText,
+          message: assistantResponse,
           sender: "bot",
           timestamp: new Date().toISOString(),
           message_type: "text",
@@ -223,7 +262,7 @@ export default function Chat() {
       });
     } finally {
       setIsLoading(false);
-      activeBotIndexRef.current = null; // resetea el puntero
+      activeBotIndexRef.current = null;
     }
   };
 
@@ -254,6 +293,7 @@ export default function Chat() {
               <div className="space-y-4">
                 <AnimatePresence>
                   {messages.map((m) => {
+                    console.log("Rendering message:", m);
                     // Si tu ChatMessageBubble no sabe renderizar markdown, usamos
                     // nuestras “burbujas” simples: bot/tool → MarkdownBubble, user → ChatMessageBubble
                     if (m.sender === "user") {
@@ -264,7 +304,12 @@ export default function Chat() {
                       return <ToolBubble key={m.id} content={m.message} />;
                     }
                     // resto (bot): Markdown
-                    return <BotMarkdownBubble key={m.id} id={m.id} content={m.message} />;
+                    if (m.sender === "bot" && m.message.trim()) {
+                      return <BotMarkdownBubble key={m.id} id={m.id} content={m.message} />;
+                    }
+                    return null;
+
+                    // Fallback
                   })}
                 </AnimatePresence>
                 {isLoading && <ChatTypingIndicator />}
