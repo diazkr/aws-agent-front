@@ -1,10 +1,15 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Cloud, AlertTriangle, FileText, MessageSquare, Settings } from "lucide-react";
+import { Cloud, AlertTriangle, MessageSquare, Settings } from "lucide-react";
 
-// Componente para cada item de navegación
+interface Conversation {
+  conv_id: string;
+  title: string;
+  last_active: string;
+}
+
 const NavItem = ({ 
   href, 
   icon: Icon, 
@@ -68,7 +73,31 @@ const NavSection = ({
 
 const Navbar = () => {
   const [expanded, setExpanded] = useState(true);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
   const pathname = usePathname();
+
+  // Función para obtener conversaciones
+  const fetchConversations = async (userId: string) => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}/api/chat/${userId}/conversations`);
+      if (response.ok) {
+        const data = await response.json();
+        setConversations(data.conversations || []);
+      }
+    } catch (error) {
+      console.error('Error fetching conversations:', error);
+    }
+  };
+
+  // Efecto para cargar conversaciones al montar el componente
+  useEffect(() => {
+    fetchConversations("test-15");
+  }, []);
+
+  // Función para manejar click en conversación
+  const handleConversationClick = (conversation: Conversation) => {
+    console.log('Clicked conversation:', conversation);
+  };
 
   // Datos de navegación
   const mainTools = [
@@ -76,11 +105,6 @@ const Navbar = () => {
       href: "/review-overcost",
       icon: AlertTriangle,
       label: "Review Overcost"
-    },
-    {
-      href: "/report-generation",
-      icon: FileText,
-      label: "Report Generation"
     },
     {
       href: "/ai-chat",
@@ -161,6 +185,52 @@ const Navbar = () => {
                 <span className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0 mx-auto"></span>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* Conversations Section */}
+        <div className="mt-8">
+          {expanded && (
+            <p className="text-purple-600 font-semibold text-xs tracking-wider uppercase mb-3">
+              Conversations
+            </p>
+          )}
+
+          <div className="space-y-2 max-h-60 overflow-y-auto">
+            {conversations.map((conversation: Conversation) => (
+              <div
+                key={conversation.conv_id}
+                onClick={() => handleConversationClick(conversation)}
+                className="cursor-pointer p-2 rounded-xl hover:bg-purple-50 transition-all duration-300 flex items-center"
+              >
+                {expanded ? (
+                  <>
+                    <MessageSquare size={16} className="text-purple-600 flex-shrink-0" />
+                    <div className="ml-2 overflow-hidden">
+                      <p className="text-gray-800 text-sm font-medium truncate">
+                        {conversation.title}
+                      </p>
+                      <p className="text-gray-500 text-xs truncate">
+                        {new Date(conversation.last_active).toLocaleDateString('es-ES', {
+                          day: '2-digit',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <MessageSquare size={16} className="text-purple-600 mx-auto" />
+                )}
+              </div>
+            ))}
+            
+            {conversations.length === 0 && expanded && (
+              <p className="text-gray-500 text-sm text-center py-4">
+                No hay conversaciones
+              </p>
+            )}
           </div>
         </div>
       </div>
