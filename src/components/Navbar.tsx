@@ -1,8 +1,8 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Cloud, MessageSquare, Settings } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { Cloud, MessageSquare, Settings, Plus } from "lucide-react";
 
 interface Conversation {
   conv_id: string;
@@ -75,6 +75,7 @@ const Navbar = () => {
   const [expanded, setExpanded] = useState(true);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const pathname = usePathname();
+  const router = useRouter();
 
   // Función para obtener conversaciones
   const fetchConversations = async (userId: string) => {
@@ -93,6 +94,23 @@ const Navbar = () => {
   useEffect(() => {
     fetchConversations("test-15");
   }, []);
+
+  // Función para generar nuevo conversation_id
+  const generateConversationId = () => {
+    const timestamp = Date.now();
+    const randomNum = Math.floor(Math.random() * 1000);
+    return `conv_${timestamp}_${randomNum}`;
+  };
+
+  // Función para crear nueva conversación
+  const handleNewChat = () => {
+    const newConvId = generateConversationId();
+    const userId = "karen-user";
+    
+    // Navegar dentro de la misma aplicación
+    const newChatUrl = `/ai-chat?mode=clean&user_id=${userId}&conv_id=${newConvId}`;
+    router.push(newChatUrl);
+  };
 
   // Función para manejar click en conversación
   const handleConversationClick = (conversation: Conversation) => {
@@ -183,8 +201,21 @@ const Navbar = () => {
           </div>
         </div>
 
-        {/* Conversations Section */}
+        {/* New Chat Button */}
         <div className="mt-8">
+          <button
+            onClick={handleNewChat}
+            className={`w-full flex items-center justify-center gap-2 p-3 rounded-xl transition-all duration-300 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-medium shadow-lg hover:shadow-xl ${
+              !expanded ? 'px-2' : ''
+            }`}
+          >
+            <Plus size={16} className="flex-shrink-0" />
+            {expanded && <span>New Chat</span>}
+          </button>
+        </div>
+
+        {/* Conversations Section */}
+        <div className="mt-6">
           {expanded && (
             <p className="text-purple-600 font-semibold text-xs tracking-wider uppercase mb-3">
               Conversations

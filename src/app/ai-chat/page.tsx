@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { Send, Sparkles, TrendingUp, DollarSign, BarChart3, AlertCircle, Bot } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
 import ChatSuggestions, { Suggestion } from "@/components/chat/ChatSuggestions";
 import ChatMessageBubble from "@/components/chat/ChatMessageBubble";
@@ -123,11 +124,29 @@ function ToolBubble({ id, content }: { id: string | number; content: string }) {
 // ------------------------------------------------------
 
 export default function Chat() {
+  const searchParams = useSearchParams();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [budgets, setBudgets] = useState<BudgetDeviation[]>([]);
   const [budgetsLoading, setBudgetsLoading] = useState(true);
+  
+  // Detectar modo y obtener parámetros de URL
+  const mode = searchParams.get('mode'); // 'clean' para chat limpio
+  const urlUserId = searchParams.get('user_id');
+  const urlConvId = searchParams.get('conv_id');
+  
+  // Función para generar nuevo conversation_id
+  const generateConversationId = () => {
+    const timestamp = Date.now();
+    const randomNum = Math.floor(Math.random() * 1000);
+    return `conv_${timestamp}_${randomNum}`;
+  };
+  
+  // Determinar user_id y conv_id
+  const userId = urlUserId || "karen-user";
+  const conversationId = urlConvId || (mode === 'clean' ? generateConversationId() : "budget-daily-check");
+  const isCleanMode = mode === 'clean';
 
   // Puntero al índice del bubble del bot que estamos rellenando
   const activeBotIndexRef = useRef<number | null>(null);
@@ -136,36 +155,68 @@ export default function Chat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Cargar mensaje inicial
-    setMessages([
-      {
-        id: "welcome",
-        message: "¡Hola Karen! 👋 Estos son los presupuestos con mayor desviación del día de hoy:",
-        sender: "bot",
-        timestamp: new Date().toISOString(),
-        message_type: "text",
-      },
-    ]);
-
-    // Cargar presupuestos automáticamente
-    const loadBudgets = async () => {
+    // Crear nueva conversación al inicializar
+    const createConversation = async () => {
       try {
-        setBudgetsLoading(true);
-        const budgetData = await getBudgetDeviations({
-          user_id: "karen-user",
-          conv_id: "budget-daily-check"
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}/api/chat/create_conv/${userId}`, {
+          method: 'PUT',
         });
-        setBudgets(budgetData.budgets);
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Conversación creada:', data);
+        }
       } catch (error) {
-        console.error("Error cargando presupuestos:", error);
-        setBudgets([]);
-      } finally {
-        setBudgetsLoading(false);
+        console.error('Error creando conversación:', error);
       }
     };
 
-    loadBudgets();
-  }, []);
+    if (isCleanMode) {
+      // Modo limpio: solo mensaje de bienvenida genérico
+      setMessages([
+        {
+          id: "welcome",
+          message: "¡Hola! Soy tu asistente inteligente de costos AWS. Puedo ayudarte a analizar gastos, generar reportes, identificar ahorros y responder preguntas sobre tu facturación. ¿En qué puedo ayudarte hoy?",
+          sender: "bot",
+          timestamp: new Date().toISOString(),
+          message_type: "text",
+        },
+      ]);
+      setBudgetsLoading(false); // No cargar presupuestos
+    } else {
+      // Modo con presupuestos (página principal)
+      setMessages([
+        {
+          id: "welcome",
+          message: "¡Hola Karen! 👋 Estos son los presupuestos con mayor desviación del día de hoy:",
+          sender: "bot",
+          timestamp: new Date().toISOString(),
+          message_type: "text",
+        },
+      ]);
+
+      // Cargar presupuestos automáticamente
+      const loadBudgets = async () => {
+        try {
+          setBudgetsLoading(true);
+          const budgetData = await getBudgetDeviations({
+            user_id: userId,
+            conv_id: conversationId
+          });
+          setBudgets(budgetData.budgets);
+        } catch (error) {
+          console.error("Error cargando presupuestos:", error);
+          setBudgets([]);
+        } finally {
+          setBudgetsLoading(false);
+        }
+      };
+
+      loadBudgets();
+    }
+
+    // Crear conversación en el backend
+    createConversation();
+  }, [isCleanMode, userId, conversationId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -229,8 +280,8 @@ export default function Chat() {
       // CONSUME EL STREAM DEL BACKEND
       for await (const evt of streamBackendChat({
         message: text,
-        userId: "test-3423",
-        convId: "1232233",
+        userId: userId,
+        convId: conversationId,
         signal: abortRef.current!.signal,
       })) {
         if (evt.type === "assistant") {
@@ -344,7 +395,7 @@ export default function Chat() {
                 </AnimatePresence>
                 
                 {/* Sección de presupuestos después del mensaje de bienvenida */}
-                {messages.length === 1 && messages[0].id === "welcome" && (
+                {!isCleanMode && messages.length === 1 && messages[0].id === "welcome" && (
                   <div className="mt-4">
                     {budgetsLoading ? (
                       <div className="flex items-center justify-center p-8">
@@ -371,7 +422,7 @@ export default function Chat() {
               </div>
             </ScrollArea>
 
-            {messages.length <= 1 && !budgets.length && !budgetsLoading && (
+            {messages.length <= 1 && (isCleanMode || (!budgets.length && !budgetsLoading)) && (
               <div className="px-6 pb-4">
                 <ChatSuggestions suggestions={suggestions} onSuggestionClick={handleSendMessage} />
               </div>
