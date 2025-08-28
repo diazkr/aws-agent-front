@@ -144,7 +144,7 @@ export default function Chat() {
   };
   
   // Determinar user_id y conv_id
-  const userId = urlUserId || "karen-user";
+  const userId = urlUserId || "test-3772";
   const conversationId = urlConvId || (mode === 'clean' ? generateConversationId() : "budget-daily-check");
   const isCleanMode = mode === 'clean';
 
@@ -403,7 +403,7 @@ export default function Chat() {
                         <span className="ml-3 text-purple-600">Cargando presupuestos...</span>
                       </div>
                     ) : budgets.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {budgets.map((budget, index) => (
                           <BudgetCard key={index} budget={budget} onLearnMore={handleLearnMore} />
                         ))}

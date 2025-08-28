@@ -31,10 +31,10 @@ export default function BudgetCard({ budget, onLearnMore }: BudgetCardProps) {
   const isOverBudget = budget.deviation < 0;
 
   return (
-    <div className={`rounded-xl p-4 border-2 transition-all duration-200 hover:shadow-lg ${
+    <div className={`rounded-xl p-4 border-1 transition-all duration-200 hover:shadow-lg ${
       isOverBudget 
-        ? 'border-red-200 bg-red-50/50 hover:bg-red-50' 
-        : 'border-green-200 bg-green-50/50 hover:bg-green-50'
+        ? 'border-red-100 bg-red-50/50 hover:bg-red-50' 
+        : 'border-green-100 bg-green-50/50 hover:bg-green-50'
     }`}>
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
@@ -67,8 +67,8 @@ export default function BudgetCard({ budget, onLearnMore }: BudgetCardProps) {
       </div>
 
       {/* Budget Details */}
-      <div className="grid grid-cols-2 gap-3 mb-3">
-        <div className="bg-white/70 rounded-lg p-2">
+      <div className="grid grid-cols-3 gap-3 mb-3">
+        <div className="rounded-lg p-2">
           <div className="flex items-center gap-1 text-xs text-slate-600 mb-1">
             <DollarSign className="w-3 h-3" />
             <span>Presupuesto</span>
@@ -78,7 +78,7 @@ export default function BudgetCard({ budget, onLearnMore }: BudgetCardProps) {
           </div>
         </div>
         
-        <div className="bg-white/70 rounded-lg p-2">
+        <div className="rounded-lg p-2">
           <div className="flex items-center gap-1 text-xs text-slate-600 mb-1">
             <TrendingUp className="w-3 h-3" />
             <span>Gastado</span>
@@ -87,36 +87,25 @@ export default function BudgetCard({ budget, onLearnMore }: BudgetCardProps) {
             {budget.calculated_spend.actual_spend.toLocaleString()} {budget.calculated_spend.unit}
           </div>
         </div>
-      </div>
 
-      {/* Deviation */}
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-slate-600">Desviación:</span>
-        <div className={`text-sm font-semibold ${
+        <div className="rounded-lg p-2">
+          <div className="flex items-center gap-1 text-xs text-slate-600 mb-1">
+            <TrendingUp className="w-3 h-3" />
+            <span>Desviación</span>
+          </div>
+          <div  className={`text-sm font-semibold ${
           isOverBudget ? 'text-red-600' : 'text-green-600'
         }`}>
-          {isOverBudget ? '+' : ''}{Math.abs(budget.deviation).toLocaleString()} {budget.budget_limit.unit}
+              {isOverBudget ? '+' : ''}{Math.abs(budget.deviation).toLocaleString()} {budget.budget_limit.unit}
+          </div>
         </div>
       </div>
 
-      {/* Progress Bar */}
-      <div className="mt-3">
-        <div className="w-full bg-gray-200 rounded-full h-2">
-          <div 
-            className={`h-2 rounded-full transition-all duration-500 ${
-              isOverBudget ? 'bg-red-500' : 'bg-green-500'
-            }`}
-            style={{ 
-              width: `${Math.min(parseFloat(deviationPercentage), 100)}%` 
-            }}
-          ></div>
-        </div>
-      </div>
       {onLearnMore && (
         <div className="mt-3 pt-3 border-t border-gray-200">
           <button
             onClick={() => onLearnMore(budget.budget_name)}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors duration-200 border border-purple-200"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 hover:bg-gray-50 border border-gray-300 hover:border-gray-400 text-gray-700 hover:text-gray-900 shadow-sm hover:shadow-md"
           >
             <MessageCircle className="w-4 h-4" />
             Quiero saber más

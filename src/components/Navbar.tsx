@@ -205,12 +205,16 @@ const Navbar = () => {
         <div className="mt-8">
           <button
             onClick={handleNewChat}
-            className={`w-full flex items-center justify-center gap-2 p-3 rounded-xl transition-all duration-300 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-medium shadow-lg hover:shadow-xl ${
+            className={`w-full flex items-center justify-center gap-2 p-3 rounded-xl transition-all duration-300 border-2 border-purple-200 hover:border-purple-400 bg-transparent hover:bg-purple-50 font-medium shadow-sm hover:shadow-md ${
               !expanded ? 'px-2' : ''
             }`}
           >
-            <Plus size={16} className="flex-shrink-0" />
-            {expanded && <span>New Chat</span>}
+            <Plus size={16} className="flex-shrink-0 text-purple-600" />
+            {expanded && (
+              <span className="bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                New Chat
+              </span>
+            )}
           </button>
         </div>
 
