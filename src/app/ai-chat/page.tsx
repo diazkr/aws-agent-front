@@ -13,16 +13,15 @@ import Input from "@/components/ui/Input";
 import { ChatMessage } from "@/services/chat/chatMessage";
 import { streamBackendChat } from "@/services/chat/llm";
 
-// 👇 Markdown
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import BudgetCard from "@/components/chat/BudgetCard";
+import { getBudgetDeviations, BudgetDeviation } from "@/services/budget/budgetService";
 
-// ------------------------------------------------------
-// Tipos
 type Message = {
   id: string | number;
   message: string;
-  sender: "user" | "bot" | "tool"; // "tool" lo mapearemos visualmente como "bot"
+  sender: "user" | "bot" | "tool";
   timestamp: string;
   message_type: "text" | "image" | "file";
 };
@@ -127,6 +126,8 @@ export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [budgets, setBudgets] = useState<BudgetDeviation[]>([]);
+  const [budgetsLoading, setBudgetsLoading] = useState(true);
 
   // Puntero al índice del bubble del bot que estamos rellenando
   const activeBotIndexRef = useRef<number | null>(null);
@@ -135,16 +136,35 @@ export default function Chat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // Cargar mensaje inicial
     setMessages([
       {
         id: "welcome",
-        message:
-          "¡Hola! Soy tu asistente inteligente de costos AWS. Puedo ayudarte a analizar gastos, generar reportes, identificar ahorros y responder preguntas sobre tu facturación. ¿En qué puedo ayudarte hoy?",
+        message: "¡Hola Karen! 👋 Estos son los presupuestos con mayor desviación del día de hoy:",
         sender: "bot",
         timestamp: new Date().toISOString(),
         message_type: "text",
       },
     ]);
+
+    // Cargar presupuestos automáticamente
+    const loadBudgets = async () => {
+      try {
+        setBudgetsLoading(true);
+        const budgetData = await getBudgetDeviations({
+          user_id: "karen-user",
+          conv_id: "budget-daily-check"
+        });
+        setBudgets(budgetData.budgets);
+      } catch (error) {
+        console.error("Error cargando presupuestos:", error);
+        setBudgets([]);
+      } finally {
+        setBudgetsLoading(false);
+      }
+    };
+
+    loadBudgets();
   }, []);
 
   useEffect(() => {
@@ -199,8 +219,8 @@ export default function Chat() {
       // CONSUME EL STREAM DEL BACKEND
       for await (const evt of streamBackendChat({
         message: text,
-        userId: "test-15",
-        convId: "999999",
+        userId: "test-32",
+        convId: "999991828323",
         signal: abortRef.current!.signal,
       })) {
         if (evt.type === "assistant") {
@@ -312,6 +332,30 @@ export default function Chat() {
                     // Fallback
                   })}
                 </AnimatePresence>
+                
+                {/* Sección de presupuestos después del mensaje de bienvenida */}
+                {messages.length === 1 && messages[0].id === "welcome" && (
+                  <div className="mt-4">
+                    {budgetsLoading ? (
+                      <div className="flex items-center justify-center p-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+                        <span className="ml-3 text-purple-600">Cargando presupuestos...</span>
+                      </div>
+                    ) : budgets.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {budgets.map((budget, index) => (
+                          <BudgetCard key={index} budget={budget} />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+                        <AlertCircle className="w-6 h-6 text-red-500 mx-auto mb-2" />
+                        <p className="text-red-700 text-sm">No se pudieron cargar los presupuestos</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
                 {isLoading && <ChatTypingIndicator />}
                 <div ref={messagesEndRef} />
               </div>
