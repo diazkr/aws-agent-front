@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Cloud, AlertTriangle, MessageSquare, Settings } from "lucide-react";
+import { Cloud, MessageSquare, Settings } from "lucide-react";
 
 interface Conversation {
   conv_id: string;
@@ -101,11 +101,6 @@ const Navbar = () => {
 
   // Datos de navegación
   const mainTools = [
-    {
-      href: "/review-overcost",
-      icon: AlertTriangle,
-      label: "Review Overcost"
-    },
     {
       href: "/ai-chat",
       icon: MessageSquare,
