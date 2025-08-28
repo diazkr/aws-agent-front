@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { TrendingUp, DollarSign, Calendar, AlertTriangle } from "lucide-react";
+import { TrendingUp, DollarSign, Calendar, AlertTriangle, MessageCircle } from "lucide-react";
 
 interface BudgetLimit {
   amount: number;
@@ -23,9 +23,10 @@ interface BudgetDeviation {
 
 interface BudgetCardProps {
   budget: BudgetDeviation;
+  onLearnMore?: (budgetName: string) => void;
 }
 
-export default function BudgetCard({ budget }: BudgetCardProps) {
+export default function BudgetCard({ budget, onLearnMore }: BudgetCardProps) {
   const deviationPercentage = ((budget.calculated_spend.actual_spend / budget.budget_limit.amount) * 100).toFixed(1);
   const isOverBudget = budget.deviation < 0;
 
@@ -111,6 +112,17 @@ export default function BudgetCard({ budget }: BudgetCardProps) {
           ></div>
         </div>
       </div>
+      {onLearnMore && (
+        <div className="mt-3 pt-3 border-t border-gray-200">
+          <button
+            onClick={() => onLearnMore(budget.budget_name)}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors duration-200 border border-purple-200"
+          >
+            <MessageCircle className="w-4 h-4" />
+            Quiero saber más
+          </button>
+        </div>
+      )}
     </div>
   );
 }

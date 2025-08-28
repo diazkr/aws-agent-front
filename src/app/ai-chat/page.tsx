@@ -173,6 +173,16 @@ export default function Chat() {
 
   const append = (m: Message) => setMessages((prev) => [...prev, m]);
 
+  const handleLearnMore = (budgetName: string) => {
+    const detailMessage = `Hola, me gustaría saber más sobre el presupuesto "${budgetName}". ¿Podrías darme más detalles del consumo por servicios y recomendaciones para optimizar gastos?`;
+    setNewMessage(detailMessage);
+    
+    const input = document.querySelector('input[placeholder*="Escribe"]') as HTMLInputElement;
+    if (input) {
+      input.focus();
+    }
+  };
+
   // Crea un bubble del bot vacío y guarda su índice para ir “streameando” ahí
   const startAssistantBubble = () => {
     setMessages((prev) => {
@@ -219,8 +229,8 @@ export default function Chat() {
       // CONSUME EL STREAM DEL BACKEND
       for await (const evt of streamBackendChat({
         message: text,
-        userId: "test-32",
-        convId: "999991828323",
+        userId: "test-3423",
+        convId: "1232233",
         signal: abortRef.current!.signal,
       })) {
         if (evt.type === "assistant") {
@@ -344,7 +354,7 @@ export default function Chat() {
                     ) : budgets.length > 0 ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {budgets.map((budget, index) => (
-                          <BudgetCard key={index} budget={budget} />
+                          <BudgetCard key={index} budget={budget} onLearnMore={handleLearnMore} />
                         ))}
                       </div>
                     ) : (
@@ -361,7 +371,7 @@ export default function Chat() {
               </div>
             </ScrollArea>
 
-            {messages.length <= 1 && (
+            {messages.length <= 1 && !budgets.length && !budgetsLoading && (
               <div className="px-6 pb-4">
                 <ChatSuggestions suggestions={suggestions} onSuggestionClick={handleSendMessage} />
               </div>
