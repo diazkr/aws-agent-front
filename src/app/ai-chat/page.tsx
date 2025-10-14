@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Send, Sparkles, TrendingUp, DollarSign, BarChart3, AlertCircle, Bot } from "lucide-react";
+import { Send, Sparkles, TrendingUp, DollarSign, BarChart3, AlertCircle, Bot, ChevronLeft, ChevronRight } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
 import ChatSuggestions, { Suggestion } from "@/components/chat/ChatSuggestions";
@@ -130,6 +130,7 @@ export default function Chat() {
   const [isLoading, setIsLoading] = useState(false);
   const [budgets, setBudgets] = useState<BudgetDeviation[]>([]);
   const [budgetsLoading, setBudgetsLoading] = useState(true);
+  const [currentSlide, setCurrentSlide] = useState(0);
   
   // Detectar modo y obtener parámetros de URL
   const mode = searchParams.get('mode'); // 'clean' para chat limpio
@@ -225,9 +226,13 @@ export default function Chat() {
   const append = (m: Message) => setMessages((prev) => [...prev, m]);
 
   const handleLearnMore = (budgetName: string) => {
-    const detailMessage = `Hola, me gustaría saber más sobre el presupuesto "${budgetName}". ¿Podrías darme más detalles del consumo por servicios y recomendaciones para optimizar gastos?`;
-    setNewMessage(detailMessage);
-    
+  const detailMessage = `Hola 👋, acabo de notar que el presupuesto "${budgetName}" está siendo sobrepasado. 
+  ¿Podrías darme un desglose detallado de los costos asociados a esta cuenta, 
+  incluyendo el consumo por servicio y los recursos que más contribuyen al gasto? 
+  Además, me gustaría recibir recomendaciones prácticas para optimizar los costos 
+  y evitar futuros excesos en este presupuesto.`;
+  setNewMessage(detailMessage);
+
     const input = document.querySelector('input[placeholder*="Escribe"]') as HTMLInputElement;
     if (input) {
       input.focus();
@@ -403,10 +408,59 @@ export default function Chat() {
                         <span className="ml-3 text-purple-600">Cargando presupuestos...</span>
                       </div>
                     ) : budgets.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {budgets.map((budget, index) => (
-                          <BudgetCard key={index} budget={budget} onLearnMore={handleLearnMore} />
-                        ))}
+                      <div className="relative">
+                        {/* Slider Container */}
+                        <div className="overflow-hidden rounded-lg">
+                          <div 
+                            className="flex transition-transform duration-300 ease-in-out"
+                            style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+                          >
+                            {Array.from({ length: Math.ceil(budgets.length / 3) }, (_, slideIndex) => (
+                              <div key={slideIndex} className="w-full flex-shrink-0">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 px-2">
+                                  {budgets.slice(slideIndex * 3, slideIndex * 3 + 3).map((budget, index) => (
+                                    <BudgetCard key={slideIndex * 3 + index} budget={budget} onLearnMore={handleLearnMore} />
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        {/* Navigation Arrows */}
+                        {Math.ceil(budgets.length / 3) > 1 && (
+                          <>
+                            <button
+                              onClick={() => setCurrentSlide(Math.max(0, currentSlide - 1))}
+                              disabled={currentSlide === 0}
+                              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 bg-white rounded-full p-2 shadow-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                            >
+                              <ChevronLeft className="w-5 h-5 text-gray-600" />
+                            </button>
+                            <button
+                              onClick={() => setCurrentSlide(Math.min(Math.ceil(budgets.length / 3) - 1, currentSlide + 1))}
+                              disabled={currentSlide === Math.ceil(budgets.length / 3) - 1}
+                              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 bg-white rounded-full p-2 shadow-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                            >
+                              <ChevronRight className="w-5 h-5 text-gray-600" />
+                            </button>
+                          </>
+                        )}
+                        
+                        {/* Slide Indicators */}
+                        {Math.ceil(budgets.length / 3) > 1 && (
+                          <div className="flex justify-center mt-4 space-x-2">
+                            {Array.from({ length: Math.ceil(budgets.length / 3) }, (_, index) => (
+                              <button
+                                key={index}
+                                onClick={() => setCurrentSlide(index)}
+                                className={`w-2 h-2 rounded-full transition-all duration-200 ${
+                                  currentSlide === index ? 'bg-purple-500' : 'bg-gray-300'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
