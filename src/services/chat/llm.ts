@@ -13,10 +13,7 @@ export interface StreamChatParams {
   signal?: AbortSignal;
 }
 
-/**
- * Lector SSE compatible con FastAPI (líneas "data: ...", con "[DONE]").
- * Usa fetch + ReadableStream; EventSource no sirve aquí porque sólo admite GET. :contentReference[oaicite:1]{index=1}
- */
+
 export async function* streamBackendChat({
   apiBase = process.env.BACKEND_URL ?? 'http://localhost:8000',
   message,
@@ -24,7 +21,6 @@ export async function* streamBackendChat({
   convId,
   signal,
 }: StreamChatParams): AsyncGenerator<BackendSSE, void, unknown> {
-  // Evita el 307 por la barra final; en tus logs el server responde 307 a /api/chat → /api/chat/.
   const url = `${apiBase.replace(/\/$/, '')}/api/chat/`;
 
   const res = await fetch(url, {
@@ -87,10 +83,6 @@ export async function* streamBackendChat({
   }
 }
 
-/**
- * Utilidad simple para consumir todo el stream y devolver el texto final.
- * Útil si quieres un modo "no-stream".
- */
 export async function collectAssistantText(params: StreamChatParams): Promise<string> {
   let text = '';
   for await (const evt of streamBackendChat(params)) {
