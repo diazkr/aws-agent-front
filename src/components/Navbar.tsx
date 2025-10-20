@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Cloud, MessageSquare, Settings, Plus } from "lucide-react";
+import { Cloud, MessageSquare, Settings, Plus, LogOut } from "lucide-react";
+import { useAuth } from "./KeycloakProvider";
 
 interface Conversation {
   conv_id: string;
@@ -76,6 +77,7 @@ const Navbar = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const pathname = usePathname();
   const router = useRouter();
+  const { userInfo, logout } = useAuth();
 
   // Función para obtener conversaciones
   const fetchConversations = async (userId: string) => {
@@ -266,25 +268,43 @@ const Navbar = () => {
       </div>
 
       {/* User Section */}
-      <div
-        className={`flex items-center mt-8 ${
-          expanded ? "space-x-3" : "justify-center"
-        }`}
-      >
-        <div className="bg-purple-500 w-8 h-8 rounded-full flex items-center justify-center text-white font-medium flex-shrink-0">
-          K
+      <div className="mt-8 space-y-3">
+        {/* User Info - Solo se muestra si está autenticado */}
+        <div
+          className={`flex items-center ${
+            expanded ? "space-x-3" : "justify-center"
+          }`}
+        >
+          <div className="bg-purple-500 w-8 h-8 rounded-full flex items-center justify-center text-white font-medium flex-shrink-0">
+            {userInfo?.username?.charAt(0).toUpperCase() || 'U'}
+          </div>
+          {expanded && (
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-gray-800 truncate">
+                {userInfo?.name || userInfo?.username || 'Usuario'}
+              </p>
+              <p className="text-gray-500 text-sm truncate">
+                {userInfo?.email || 'Sin email'}
+              </p>
+            </div>
+          )}
+          {expanded && (
+            <div className="text-gray-400 flex-shrink-0">
+              <Settings size={20} />
+            </div>
+          )}
         </div>
-        {expanded && (
-          <div>
-            <p className="font-medium text-gray-800">Karen Diaz</p>
-            <p className="text-gray-500 text-sm">Administrador AWS</p>
-          </div>
-        )}
-        {expanded && (
-          <div className="ml-auto text-gray-400">
-            <Settings size={20} />
-          </div>
-        )}
+
+        {/* Logout Button */}
+        <button
+          onClick={logout}
+          className={`w-full flex items-center justify-center gap-2 p-2 rounded-xl transition-all duration-300 border border-red-200 hover:border-red-400 bg-transparent hover:bg-red-50 text-red-600 font-medium ${
+            !expanded ? 'px-2' : ''
+          }`}
+        >
+          <LogOut size={16} className="flex-shrink-0" />
+          {expanded && <span>Cerrar Sesión</span>}
+        </button>
       </div>
     </div>
   );
