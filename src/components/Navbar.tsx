@@ -92,31 +92,53 @@ const Navbar = () => {
     }
   };
 
-  // Efecto para cargar conversaciones al montar el componente
   useEffect(() => {
-    fetchConversations("test-15");
-  }, []);
+    if (userInfo?.username) {
+      fetchConversations(userInfo.username);
+    }
+  }, [userInfo?.username]);
 
-  // Función para generar nuevo conversation_id
-  const generateConversationId = () => {
-    const timestamp = Date.now();
-    const randomNum = Math.floor(Math.random() * 1000);
-    return `conv_${timestamp}_${randomNum}`;
-  };
+  const handleNewChat = async () => {
+    if (!userInfo?.username) {
+      console.error('No user logged in');
+      return;
+    }
 
-  // Función para crear nueva conversación
-  const handleNewChat = () => {
-    const newConvId = generateConversationId();
-    const userId = "karen-user";
-    
-    // Navegar dentro de la misma aplicación
-    const newChatUrl = `/ai-chat?mode=clean&user_id=${userId}&conv_id=${newConvId}`;
-    router.push(newChatUrl);
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}/api/chat/create_conv/${userInfo.username}`,
+        {
+          method: 'PUT',
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        const newConvId = data.conv_id;
+        const userId = userInfo.username;
+
+        await fetchConversations(userId);
+
+        const newChatUrl = `/ai-chat?mode=clean&user_id=${userId}&conv_id=${newConvId}`;
+        router.push(newChatUrl);
+      } else {
+        console.error('Error creating conversation');
+      }
+    } catch (error) {
+      console.error('Error creating conversation:', error);
+    }
   };
 
   // Función para manejar click en conversación
   const handleConversationClick = (conversation: Conversation) => {
-    console.log('Clicked conversation:', conversation);
+    if (!userInfo?.username) {
+      console.error('No user logged in');
+      return;
+    }
+
+    // Navegar a la conversación específica
+    const chatUrl = `/ai-chat?user_id=${userInfo.username}&conv_id=${conversation.conv_id}`;
+    router.push(chatUrl);
   };
 
   // Datos de navegación

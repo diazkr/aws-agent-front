@@ -13,6 +13,7 @@ import { ScrollArea } from "@/components/ui/ScrollArea";
 import Input from "@/components/ui/Input";
 import { ChatMessage } from "@/services/chat/chatMessage";
 import { streamBackendChat } from "@/services/chat/llm";
+import { useAuth } from "@/components/KeycloakProvider";
 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -125,27 +126,28 @@ function ToolBubble({ id, content }: { id: string | number; content: string }) {
 
 export default function Chat() {
   const searchParams = useSearchParams();
+  const { userInfo } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [budgets, setBudgets] = useState<BudgetDeviation[]>([]);
   const [budgetsLoading, setBudgetsLoading] = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0);
-  
+
   // Detectar modo y obtener parámetros de URL
   const mode = searchParams.get('mode'); // 'clean' para chat limpio
   const urlUserId = searchParams.get('user_id');
   const urlConvId = searchParams.get('conv_id');
-  
+
   // Función para generar nuevo conversation_id
   const generateConversationId = () => {
     const timestamp = Date.now();
     const randomNum = Math.floor(Math.random() * 1000);
     return `conv_${timestamp}_${randomNum}`;
   };
-  
-  // Determinar user_id y conv_id
-  const userId = urlUserId || "test-3772";
+
+  // Determinar user_id y conv_id - usar el usuario de Keycloak como fallback
+  const userId = urlUserId || userInfo?.username || "guest-user";
   const conversationId = urlConvId || (mode === 'clean' ? generateConversationId() : "budget-daily-check");
   const isCleanMode = mode === 'clean';
 
@@ -156,6 +158,33 @@ export default function Chat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // Función para cargar historial de conversación existente
+    const loadConversationHistory = async () => {
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}/api/chat/${conversationId}/history`
+        );
+        if (response.ok) {
+          const data = await response.json();
+          if (data.history && data.history.length > 0) {
+            // Convertir historial del backend al formato de mensajes del frontend
+            const loadedMessages: Message[] = data.history.map((msg: any, index: number) => ({
+              id: `history-${index}`,
+              message: msg.content,
+              sender: msg.role === 'user' ? 'user' : 'bot',
+              timestamp: new Date().toISOString(),
+              message_type: 'text',
+            }));
+            setMessages(loadedMessages);
+            return true; // Indica que se cargó historial
+          }
+        }
+      } catch (error) {
+        console.error('Error cargando historial:', error);
+      }
+      return false; // No se cargó historial
+    };
+
     // Crear nueva conversación al inicializar
     const createConversation = async () => {
       try {
@@ -171,52 +200,64 @@ export default function Chat() {
       }
     };
 
-    if (isCleanMode) {
-      // Modo limpio: solo mensaje de bienvenida genérico
-      setMessages([
-        {
-          id: "welcome",
-          message: "¡Hola! Soy tu asistente inteligente de costos AWS. Puedo ayudarte a analizar gastos, generar reportes, identificar ahorros y responder preguntas sobre tu facturación. ¿En qué puedo ayudarte hoy?",
-          sender: "bot",
-          timestamp: new Date().toISOString(),
-          message_type: "text",
-        },
-      ]);
-      setBudgetsLoading(false); // No cargar presupuestos
-    } else {
-      // Modo con presupuestos (página principal)
-      setMessages([
-        {
-          id: "welcome",
-          message: "¡Hola Karen! 👋 Estos son los presupuestos con mayor desviación del día de hoy:",
-          sender: "bot",
-          timestamp: new Date().toISOString(),
-          message_type: "text",
-        },
-      ]);
+    const initializeChat = async () => {
+      // Primero intentar cargar historial si no es modo limpio
+      const hasHistory = !isCleanMode && await loadConversationHistory();
 
-      // Cargar presupuestos automáticamente
-      const loadBudgets = async () => {
-        try {
-          setBudgetsLoading(true);
-          const budgetData = await getBudgetDeviations({
-            user_id: userId,
-            conv_id: conversationId
-          });
-          setBudgets(budgetData.budgets);
-        } catch (error) {
-          console.error("Error cargando presupuestos:", error);
-          setBudgets([]);
-        } finally {
-          setBudgetsLoading(false);
+      if (!hasHistory) {
+        // Si no hay historial o es modo limpio, mostrar mensaje de bienvenida
+        if (isCleanMode) {
+          // Modo limpio: solo mensaje de bienvenida genérico
+          setMessages([
+            {
+              id: "welcome",
+              message: "¡Hola! Soy tu asistente inteligente de costos AWS. Puedo ayudarte a analizar gastos, generar reportes, identificar ahorros y responder preguntas sobre tu facturación. ¿En qué puedo ayudarte hoy?",
+              sender: "bot",
+              timestamp: new Date().toISOString(),
+              message_type: "text",
+            },
+          ]);
+          setBudgetsLoading(false); // No cargar presupuestos
+        } else {
+          // Modo con presupuestos (página principal)
+          setMessages([
+            {
+              id: "welcome",
+              message: "¡Hola! 👋 Estos son los presupuestos con mayor desviación del día de hoy:",
+              sender: "bot",
+              timestamp: new Date().toISOString(),
+              message_type: "text",
+            },
+          ]);
+
+          // Cargar presupuestos automáticamente
+          const loadBudgets = async () => {
+            try {
+              setBudgetsLoading(true);
+              const budgetData = await getBudgetDeviations({
+                user_id: userId,
+                conv_id: conversationId
+              });
+              setBudgets(budgetData.budgets);
+            } catch (error) {
+              console.error("Error cargando presupuestos:", error);
+              setBudgets([]);
+            } finally {
+              setBudgetsLoading(false);
+            }
+          };
+
+          loadBudgets();
         }
-      };
+      }
 
-      loadBudgets();
-    }
+      // Crear conversación en el backend solo si es modo limpio
+      if (isCleanMode) {
+        createConversation();
+      }
+    };
 
-    // Crear conversación en el backend
-    createConversation();
+    initializeChat();
   }, [isCleanMode, userId, conversationId]);
 
   useEffect(() => {
