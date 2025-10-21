@@ -22,9 +22,8 @@ export const getKeycloakInstance = (): Keycloak => {
 
 // Keycloak initialization options
 export const keycloakInitOptions = {
-  onLoad: 'login-required' as const, // Automatically redirect to Keycloak login if not authenticated
-  checkLoginIframe: false, // Disable iframe for simpler setup
-  pkceMethod: 'S256' as const, // Use PKCE for security
+  onLoad: 'login-required' as const,
+  checkLoginIframe: false,
 };
 
 // Helper function to get token

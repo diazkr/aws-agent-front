@@ -54,16 +54,7 @@ export const KeycloakProvider: React.FC<KeycloakProviderProps> = ({ children }) 
     const initKeycloak = async () => {
       try {
         const keycloakInstance = getKeycloakInstance();
-
-        console.log('Initializing Keycloak with config:', {
-          url: keycloakInstance.authServerUrl,
-          realm: keycloakInstance.realm,
-          clientId: keycloakInstance.clientId,
-        });
-
         const auth = await keycloakInstance.init(keycloakInitOptions);
-
-        console.log('Keycloak initialized, authenticated:', auth);
 
         setKeycloak(keycloakInstance);
         setAuthenticated(auth);
@@ -97,7 +88,6 @@ export const KeycloakProvider: React.FC<KeycloakProviderProps> = ({ children }) 
 
         // Listen for auth events
         keycloakInstance.onAuthSuccess = () => {
-          console.log('Auth success');
           setAuthenticated(true);
           const info = getUserInfo();
           setUserInfo({
@@ -109,19 +99,17 @@ export const KeycloakProvider: React.FC<KeycloakProviderProps> = ({ children }) 
         };
 
         keycloakInstance.onAuthError = () => {
-          console.error('Auth error');
           setAuthenticated(false);
           setUserInfo(null);
         };
 
         keycloakInstance.onAuthLogout = () => {
-          console.log('Auth logout');
           setAuthenticated(false);
           setUserInfo(null);
         };
 
       } catch (error) {
-        console.error('Failed to initialize Keycloak', error);
+        console.error('Failed to initialize Keycloak:', error);
         setLoading(false);
       }
     };

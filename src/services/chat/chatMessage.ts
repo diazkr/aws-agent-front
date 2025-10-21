@@ -8,7 +8,6 @@ export type ChatMessageType = {
 
 export const ChatMessage = {
   bulkCreate: async (messages: ChatMessageType[]) => {
-    console.log("Mensajes guardados en la base de datos:", messages);
     return Promise.resolve(messages);
   },
 };

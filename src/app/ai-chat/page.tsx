@@ -37,7 +37,7 @@ function BotMarkdownBubble({ id, content }: { id: string | number; content: stri
         <Bot className="w-4 h-4 text-white" />
       </div>
       <div className="max-w-[85%] rounded-2xl px-4 py-3 bg-white/80 shadow border border-purple-100 text-slate-800">
-        <div className="prose prose-sm max-w-none prose-slate">
+        <div className="max-w-none text-sm">
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
             components={{
@@ -193,7 +193,6 @@ export default function Chat() {
         });
         if (response.ok) {
           const data = await response.json();
-          console.log('Conversación creada:', data);
         }
       } catch (error) {
         console.error('Error creando conversación:', error);
@@ -420,7 +419,6 @@ export default function Chat() {
               <div className="space-y-4">
                 <AnimatePresence>
                   {messages.map((m) => {
-                    console.log("Rendering message:", m);
                     // Si tu ChatMessageBubble no sabe renderizar markdown, usamos
                     // nuestras “burbujas” simples: bot/tool → MarkdownBubble, user → ChatMessageBubble
                     if (m.sender === "user") {
