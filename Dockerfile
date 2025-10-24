@@ -1,23 +1,50 @@
-# Usar una imagen base de Node.js
-FROM node:18-alpine
+# Multi-stage build for optimized production image
 
-# Establecer el directorio de trabajo dentro del contenedor
+# Stage 1: Dependencies
+FROM node:18-alpine AS deps
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Copiar los archivos de package.json y package-lock.json
-COPY package*.json ./
+# Copy package files
+COPY package.json package-lock.json* ./
+RUN npm ci
 
-# Instalar las dependencias
-RUN npm install
+# Stage 2: Builder
+FROM node:18-alpine AS builder
+WORKDIR /app
 
-# Copiar el resto del código de la aplicación
+# Copy dependencies from deps stage
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Construir la aplicación
+# Set environment variables for build
+ENV NEXT_TELEMETRY_DISABLED 1
+
+# Build the application
 RUN npm run build
 
-# Exponer el puerto en el que correrá la aplicación
+# Stage 3: Runner (Production)
+FROM node:18-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV production
+ENV NEXT_TELEMETRY_DISABLED 1
+
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# Copy built application
+COPY --from=builder /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+USER nextjs
+
 EXPOSE 3000
 
-# Comando para iniciar la aplicación
-CMD ["npm", "start"]
+ENV PORT 3000
+ENV HOSTNAME "0.0.0.0"
+
+# Start the application
+CMD ["node", "server.js"]
