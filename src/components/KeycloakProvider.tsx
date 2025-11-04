@@ -1,9 +1,5 @@
 'use client';
 
-/**
- * Keycloak Authentication Provider for Next.js
- * Manages authentication state and provides auth methods to the app
- */
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import Keycloak from 'keycloak-js';
 import { getKeycloakInstance, keycloakInitOptions, getUserInfo } from '@/lib/keycloak';
@@ -71,22 +67,14 @@ export const KeycloakProvider: React.FC<KeycloakProviderProps> = ({ children }) 
 
         setLoading(false);
 
-        // Setup token refresh
         keycloakInstance.onTokenExpired = () => {
           keycloakInstance
             .updateToken(30)
-            .then((refreshed) => {
-              if (refreshed) {
-                console.log('Token refreshed');
-              }
-            })
             .catch(() => {
-              console.error('Failed to refresh token');
               keycloakInstance.logout();
             });
         };
 
-        // Listen for auth events
         keycloakInstance.onAuthSuccess = () => {
           setAuthenticated(true);
           const info = getUserInfo();
@@ -108,8 +96,7 @@ export const KeycloakProvider: React.FC<KeycloakProviderProps> = ({ children }) 
           setUserInfo(null);
         };
 
-      } catch (error) {
-        console.error('Failed to initialize Keycloak:', error);
+      } catch {
         setLoading(false);
       }
     };

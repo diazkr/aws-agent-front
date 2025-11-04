@@ -1,7 +1,13 @@
-// services/chat/llm.ts
+export interface ToolCallContent {
+  name?: string;
+  args?: Record<string, unknown>;
+  tool_call_id?: string;
+  [key: string]: unknown;
+}
+
 export type BackendSSE =
   | { type: 'assistant'; content: string }
-  | { type: 'tool_call'; content: any }
+  | { type: 'tool_call'; content: ToolCallContent }
   | { type: 'tool_message'; content: string }
   | { type: 'done' };
 
@@ -13,15 +19,20 @@ export interface StreamChatParams {
   signal?: AbortSignal;
 }
 
-
 export async function* streamBackendChat({
-  apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000',
+  apiBase,
   message,
   userId,
   convId,
   signal,
 }: StreamChatParams): AsyncGenerator<BackendSSE, void, unknown> {
-  const url = `${apiBase.replace(/\/$/, '')}/api/chat/`;
+  const baseUrl = apiBase || process.env.NEXT_PUBLIC_API_BASE_URL;
+
+  if (!baseUrl) {
+    throw new Error('API base URL is not configured. Set NEXT_PUBLIC_API_BASE_URL environment variable.');
+  }
+
+  const url = `${baseUrl.replace(/\/$/, '')}/api/chat/`;
 
   const res = await fetch(url, {
     method: 'POST',
@@ -65,16 +76,16 @@ export async function* streamBackendChat({
           return;
         }
         try {
-          const evt = JSON.parse(data) as { type: string; content: any };
+          const evt = JSON.parse(data) as { type: string; content: unknown };
           if (evt?.type === 'assistant') {
             yield { type: 'assistant', content: String(evt.content ?? '') };
           } else if (evt?.type === 'tool_call') {
-            yield { type: 'tool_call', content: evt.content };
+            yield { type: 'tool_call', content: evt.content as ToolCallContent };
           } else if (evt?.type === 'tool_message') {
             yield { type: 'tool_message', content: String(evt.content ?? '') };
-          } // ignora tipos desconocidos
+          }
         } catch {
-          // A veces llegan heartbeats / keep-alives o logs; los ignoramos
+          // Ignorar errores de parsing JSON
         }
       }
     }

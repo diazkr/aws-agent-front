@@ -47,7 +47,6 @@ export async function getBudgetDeviations(request: BudgetRequest): Promise<Budge
     const data: BudgetDeviationsResponse = await response.json();
     return data;
   } catch (error) {
-    console.error('Error fetching budget deviations:', error);
     throw error;
   }
 }

@@ -4,6 +4,7 @@ type InputProps = {
   value?: string;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onKeyPress?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   placeholder?: string;
   disabled?: boolean;
   className?: string;
@@ -22,6 +23,7 @@ export default function Input({
   value,
   onChange,
   onKeyPress,
+  onKeyDown,
   placeholder,
   disabled = false,
   className = "",
@@ -34,6 +36,7 @@ export default function Input({
       value={value}
       onChange={onChange}
       onKeyPress={onKeyPress}
+      onKeyDown={onKeyDown}
       placeholder={placeholder}
       disabled={disabled}
       className={`w-full h-12 px-4 outline-none transition-all duration-200 text-gray-700 ${

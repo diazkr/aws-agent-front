@@ -1,47 +1,44 @@
-/**
- * API utilities with automatic authentication token injection
- */
 import { getToken, updateToken } from './keycloak';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+
+if (!API_BASE_URL) {
+  throw new Error('NEXT_PUBLIC_API_BASE_URL environment variable is not configured');
+}
 
 interface FetchOptions extends RequestInit {
   requireAuth?: boolean;
 }
 
-/**
- * Enhanced fetch with automatic token management
- */
 export async function authenticatedFetch(
   endpoint: string,
   options: FetchOptions = {}
 ): Promise<Response> {
   const { requireAuth = false, headers = {}, ...restOptions } = options;
 
-  // Update token if needed (refresh if expires in less than 30 seconds)
   try {
     await updateToken(30);
-  } catch (error) {
-    console.warn('Could not update token', error);
+  } catch {
+    // Token update failed, continue with existing token
   }
 
-  // Get current token
   const token = getToken();
 
-  // Build headers
-  const fetchHeaders: HeadersInit = {
+  const fetchHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...headers,
+    ...(headers as Record<string, string>),
   };
 
-  // Add Authorization header if token exists
   if (token) {
     fetchHeaders['Authorization'] = `Bearer ${token}`;
   } else if (requireAuth) {
     throw new Error('Authentication required but no token available');
   }
 
-  // Make request
+  if (!API_BASE_URL && !endpoint.startsWith('http')) {
+    throw new Error('API base URL is not configured');
+  }
+
   const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
 
   const response = await fetch(url, {
@@ -49,19 +46,14 @@ export async function authenticatedFetch(
     headers: fetchHeaders,
   });
 
-  // Handle 401 Unauthorized
   if (response.status === 401) {
-    console.error('Unauthorized request - token may be expired');
-    // You could trigger a logout or token refresh here
+    throw new Error('Unauthorized - token may be expired');
   }
 
   return response;
 }
 
-/**
- * GET request with authentication
- */
-export async function apiGet<T = any>(
+export async function apiGet<T = unknown>(
   endpoint: string,
   options: FetchOptions = {}
 ): Promise<T> {
@@ -74,15 +66,12 @@ export async function apiGet<T = any>(
     throw new Error(`API Error: ${response.statusText}`);
   }
 
-  return response.json();
+  return response.json() as Promise<T>;
 }
 
-/**
- * POST request with authentication
- */
-export async function apiPost<T = any>(
+export async function apiPost<T = unknown, D = unknown>(
   endpoint: string,
-  data?: any,
+  data?: D,
   options: FetchOptions = {}
 ): Promise<T> {
   const response = await authenticatedFetch(endpoint, {
@@ -95,15 +84,12 @@ export async function apiPost<T = any>(
     throw new Error(`API Error: ${response.statusText}`);
   }
 
-  return response.json();
+  return response.json() as Promise<T>;
 }
 
-/**
- * PUT request with authentication
- */
-export async function apiPut<T = any>(
+export async function apiPut<T = unknown, D = unknown>(
   endpoint: string,
-  data?: any,
+  data?: D,
   options: FetchOptions = {}
 ): Promise<T> {
   const response = await authenticatedFetch(endpoint, {
@@ -116,13 +102,10 @@ export async function apiPut<T = any>(
     throw new Error(`API Error: ${response.statusText}`);
   }
 
-  return response.json();
+  return response.json() as Promise<T>;
 }
 
-/**
- * DELETE request with authentication
- */
-export async function apiDelete<T = any>(
+export async function apiDelete<T = unknown>(
   endpoint: string,
   options: FetchOptions = {}
 ): Promise<T> {
@@ -135,5 +118,5 @@ export async function apiDelete<T = any>(
     throw new Error(`API Error: ${response.statusText}`);
   }
 
-  return response.json();
+  return response.json() as Promise<T>;
 }
