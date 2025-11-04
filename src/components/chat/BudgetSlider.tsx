@@ -62,7 +62,6 @@ export default function BudgetSlider({
         </div>
       </div>
 
-      {/* Navigation Arrows */}
       {totalSlides > 1 && (
         <>
           <button
