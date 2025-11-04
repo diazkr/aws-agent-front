@@ -6,7 +6,7 @@ export type BackendSSE =
   | { type: 'done' };
 
 export interface StreamChatParams {
-  apiBase?: string; // p.ej. process.env.NEXT_PUBLIC_API_BASE_URL
+  apiBase?: string;
   message: string;
   userId: string;
   convId: string;
@@ -15,7 +15,7 @@ export interface StreamChatParams {
 
 
 export async function* streamBackendChat({
-  apiBase = process.env.BACKEND_URL ?? 'http://localhost:8000',
+  apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000',
   message,
   userId,
   convId,
@@ -47,13 +47,11 @@ export async function* streamBackendChat({
 
     buffer += decoder.decode(value, { stream: true });
 
-    // Procesa chunks separados por doble salto de línea, estándar SSE. :contentReference[oaicite:2]{index=2}
     let boundary: number;
     while ((boundary = buffer.indexOf('\n\n')) !== -1) {
       const chunk = buffer.slice(0, boundary);
       buffer = buffer.slice(boundary + 2);
 
-      // Cada “evento” puede traer varias líneas; nos quedamos con las que empiezan con "data:"
       const lines = chunk
         .split('\n')
         .map((l) => l.trim())
