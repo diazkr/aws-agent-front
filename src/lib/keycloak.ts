@@ -2,7 +2,7 @@ import Keycloak from 'keycloak-js';
 
 export const keycloakConfig = {
   url: process.env.NEXT_PUBLIC_KEYCLOAK_URL || 'http://localhost:8080',
-  realm: process.env.NEXT_PUBLIC_KEYCLOAK_REALM || 'aws-cost-realm',
+  realm: process.env.NEXT_PUBLIC_KEYCLOAK_REALM || 'master',
   clientId: process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID || 'aws-cost-app',
 };
 
@@ -27,6 +27,11 @@ export const getToken = (): string | undefined => {
 
 export const getUserInfo = () => {
   const keycloak = getKeycloakInstance();
+
+  const clientRoles = keycloak.tokenParsed?.resource_access?.['aws-cost-app']?.roles || [];
+  const realmRoles = keycloak.tokenParsed?.realm_access?.roles || [];
+  const allRoles = [...clientRoles, ...realmRoles];
+
   return {
     token: keycloak.token,
     refreshToken: keycloak.refreshToken,
@@ -35,8 +40,23 @@ export const getUserInfo = () => {
     username: keycloak.tokenParsed?.preferred_username,
     email: keycloak.tokenParsed?.email,
     name: keycloak.tokenParsed?.name,
-    roles: keycloak.tokenParsed?.realm_access?.roles || [],
+    roles: allRoles,
   };
+};
+
+export const hasRequiredRole = (requiredRole: string = 'cost-user'): boolean => {
+  const keycloak = getKeycloakInstance();
+  const clientRoles = keycloak.tokenParsed?.resource_access?.['aws-cost-app']?.roles || [];
+  const realmRoles = keycloak.tokenParsed?.realm_access?.roles || [];
+  const allRoles = [...clientRoles, ...realmRoles];
+  return allRoles.includes(requiredRole);
+};
+
+export const getUserRoles = (): string[] => {
+  const keycloak = getKeycloakInstance();
+  const clientRoles = keycloak.tokenParsed?.resource_access?.['aws-cost-app']?.roles || [];
+  const realmRoles = keycloak.tokenParsed?.realm_access?.roles || [];
+  return [...clientRoles, ...realmRoles];
 };
 
 export const login = () => {
