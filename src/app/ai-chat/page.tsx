@@ -11,7 +11,6 @@ import BudgetSlider from "@/components/chat/BudgetSlider";
 import { Card, CardContent, CardTitle } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import { ScrollArea } from "@/components/ui/ScrollArea";
-import Input from "@/components/ui/Input";
 
 import { useChatConversation } from "@/hooks/useChatConversation";
 import { useBudgetDeviations } from "@/hooks/useBudgetDeviations";
