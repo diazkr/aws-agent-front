@@ -6,17 +6,6 @@ export const keycloakConfig = {
   clientId: process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID || 'aws-cost-app',
 };
 
-console.log('🔧 KEYCLOAK CONFIG DEBUG:');
-console.log('Environment variables:');
-console.log('- NEXT_PUBLIC_KEYCLOAK_URL:', process.env.NEXT_PUBLIC_KEYCLOAK_URL);
-console.log('- NEXT_PUBLIC_KEYCLOAK_REALM:', process.env.NEXT_PUBLIC_KEYCLOAK_REALM);
-console.log('- NEXT_PUBLIC_KEYCLOAK_CLIENT_ID:', process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID);
-console.log('Final config:');
-console.log('- URL:', keycloakConfig.url);
-console.log('- REALM:', keycloakConfig.realm);
-console.log('- CLIENT_ID:', keycloakConfig.clientId);
-console.log('Full auth URL will be:', `${keycloakConfig.url}/realms/${keycloakConfig.realm}/protocol/openid-connect/auth`);
-
 let keycloakInstance: Keycloak | null = null;
 
 export const getKeycloakInstance = (): Keycloak => {
