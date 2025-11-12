@@ -5,7 +5,6 @@ import { Send, Sparkles } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/KeycloakProvider";
 
-// Components
 import ChatSuggestions from "@/components/chat/ChatSuggestions";
 import ChatMessages from "@/components/chat/ChatMessages";
 import BudgetSlider from "@/components/chat/BudgetSlider";
